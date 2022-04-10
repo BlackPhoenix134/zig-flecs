@@ -86,24 +86,20 @@ fn getAllExamples(b: *std.build.Builder, root_directory: []const u8) [][2][]cons
 /// prefix_path is used to add package paths. It should be the the same path used to include this build file
 pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std.zig.CrossTarget, lib_type: LibType, comptime prefix_path: []const u8) void {
     if (prefix_path.len > 0 and !std.mem.endsWith(u8, prefix_path, "/")) @panic("prefix-path must end with '/' if it is not empty");
-
     switch (lib_type) {
         .static => {
             const lib = b.addStaticLibrary("flecs", null);
             lib.setBuildMode(std.builtin.Mode.ReleaseFast);
             lib.setTarget(target);
-
             if (target.isWindows()) artifact.target.abi = std.Target.Abi.msvc;
             compileFlecs(b, lib, target, prefix_path);
             lib.install();
-
             artifact.linkLibrary(lib);
         },
         .exe_compiled => {
             compileFlecs(b, artifact, target, prefix_path);
         },
     }
-
     artifact.addPackagePath("flecs", prefix_path ++ "src/flecs.zig");
 }
 
@@ -115,7 +111,7 @@ fn compileFlecs(b: *Builder, exe: *std.build.LibExeObjStep, target: std.zig.Cros
     if (target.isWindows()) {
         exe.target.abi = std.Target.Abi.msvc;
         exe.linkSystemLibrary("Ws2_32");
-
+        // exe.linkSystemLibrary("c++");
         buildFlags.append("-DFLECS_OS_API_IMPL") catch unreachable;
         buildFlags.append("-DECS_TARGET_MSVC") catch unreachable;
 
