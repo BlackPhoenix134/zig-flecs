@@ -26,12 +26,19 @@ pub fn componentHandle(comptime T: type) *flecs.EntityId {
 
 /// gets the EntityId for T creating it if it doesn't already exist
 pub fn componentId(world: *flecs.c.ecs_world_t, comptime T: type) flecs.EntityId {
-    var handle = componentHandle(T);
-    if (handle.* < std.math.maxInt(flecs.EntityId)) {
-        return handle.*;
+    var handle = componentHandle(T); //default == maxInt
+    if (handle.* < std.math.maxInt(flecs.EntityId)) {  //If yes, its right one. If not, register for multi world then return.
+        std.log.debug("are you valid? {}", .{flecs.c.ecs_is_valid(world, handle.*)});
+        
+
+        if(flecs.c.ecs_is_valid(world, handle.*)) {
+            std.log.debug("it is valid and i return it {}", .{handle.*});
+            return handle.*; 
+        }
+        std.log.debug("it is not valid {}", .{handle.*});
     }
 
-    if (@sizeOf(T) == 0) {
+    if (@sizeOf(T) == 0) { //idk this should reuse the component id if that works :(
         var desc = std.mem.zeroInit(flecs.c.ecs_entity_desc_t, .{ .name = @typeName(T) });
         handle.* = flecs.c.ecs_entity_init(world, &desc);
     } else {
@@ -42,7 +49,7 @@ pub fn componentId(world: *flecs.c.ecs_world_t, comptime T: type) flecs.EntityId
         });
         handle.* = flecs.c.ecs_component_init(world, &desc);
     }
-
+    std.log.debug("i set it to {}", .{handle.*});
     // allow disabling reflection data with a root bool
     if (!@hasDecl(@import("root"), "disable_reflection") or !@as(bool, @field(@import("root"), "disable_reflection")))
         registerReflectionData(world, T, handle.*);
